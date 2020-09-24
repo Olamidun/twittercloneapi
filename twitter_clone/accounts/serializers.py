@@ -1,9 +1,12 @@
 # from accounts.models import UserProfile
 from rest_framework import serializers
 from rest_framework.response import Response
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
-
+import jwt
+from django.conf import settings
 class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -29,20 +32,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Token.objects.create(user=user)
         return User.objects.create_user(username=validated_data['username'], email=validated_data['email'], password=validated_data['password'])
     
-    # def validate_email(self, data):
-    #     if User.objects.filter(email__iexact=data['email']).exists():
-    #         raise serializers.ValidationError({'email': 'Email already exists'})
-    #     return data
-
-    # def save(self):
-    #     user = User(
-    #         username=self.validated_data.get('username'),
-    #         email=self.validated_data.get('email')
-    #     )
-    #     user.set_password(self.validated_data.get('password'))
-    #     user.save()
-    #     return
-
 
 
 class LoginSerializer(serializers.ModelSerializer):
@@ -56,21 +45,32 @@ class LoginSerializer(serializers.ModelSerializer):
         model = User
         fields = ['username', 'password', 'email', 'date_joined', 'active']
 
+    # def token(self, data):
+    #     user = User.objects.get(email=data['email'])
+    #     refresh  = RefreshToken.for_user(user)
+    #     return {
+    #         "refresh": str(refresh),
+    #         "access": str(refresh.access_token)
+    #     }
+
     def validate(self, data):
         username = data['username']
         password = data['password']
         user = authenticate(username=username, password=password)
         
+        if not user.is_active:
+            raise AuthenticationFailed("Account is not active yet, please check your mailbox for email verification link")
         if not user:
             raise serializers.ValidationError({"error": "Invalid login details, try again"})
+
         return {
             "email": user.email,
             "username": user.username,
             "date_joined": user.date_joined,
-            "active": user.is_active
+            "active": user.is_active, 
+            "token": token
         }
-        # print(super().validate(data))
-        # return super().validate(data)
+
 
 
 # class UserProfileSerializer(serializers.ModelSerializer):
