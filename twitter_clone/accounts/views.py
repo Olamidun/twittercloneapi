@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from accounts.serializers import UserRegistrationSerializer, LoginSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth.models import User
+from accounts.models import Account
 from .utils import Util
 from django.contrib.sites.shortcuts import get_current_site
 import jwt
@@ -21,9 +21,7 @@ def registration(request):
         serializer.save()
         user_data = serializer.data
         print(user_data)
-        user = User.objects.get(email=user_data['email'])
-        user.is_active = False
-        user.save()
+        user = Account.objects.get(email=user_data['email'])
         token = RefreshToken.for_user(user).access_token
 
         current_site = get_current_site(request).domain
@@ -51,8 +49,6 @@ def login(request):
 
     serializer = LoginSerializer(data=request.data)
     if serializer.is_valid():
-        # user = serializer.validate(serializer.data)
-        # if user is not None:
         return Response(serializer.data, status=status.HTTP_200_OK)
 
         # return Response(serializer.data, status=status.HTTP_200_OK)
@@ -69,9 +65,9 @@ def verify_email(request):
     token = request.GET['token']
     try:
         payload = jwt.decode(token, settings.SECRET_KEY)
-        user = User.objects.get(id=payload['user_id'])
-        if not user.is_active:
-            user.is_active = True
+        user = Account.objects.get(id=payload['user_id'])
+        if not user.is_verified:
+            user.is_verified =True
             user.save()
         return Response({'email': 'Your account has been successfull activated'}, status=status.HTTP_200_OK)
     except jwt.ExpiredSignatureError:
