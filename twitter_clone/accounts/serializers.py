@@ -23,15 +23,16 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
     def create(self, validated_data):
-        # user = User(
-        #     email=validated_data['email'],
-        #     username=validated_data['username'],
-        # )
-        # user.set_password(validated_data['password'])
-        # user.save()
-        # Token.objects.create(user=user)
+    
         return Account.objects.create_user(username=validated_data['username'], email=validated_data['email'], password=validated_data['password'])
     
+
+class EmailVerificationSerializer(serializers.ModelSerializer):
+    tokens = serializers.CharField(max_length=555)
+
+    class Meta:
+        model = Account
+        fields = ['tokens']
 
 
 class LoginSerializer(serializers.ModelSerializer):
