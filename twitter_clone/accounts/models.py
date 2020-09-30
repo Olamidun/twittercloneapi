@@ -44,7 +44,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
     objects = AccountManager()
 
     def __str__(self):
-        return self.email
+        return self.username
 
 
     def token(self):

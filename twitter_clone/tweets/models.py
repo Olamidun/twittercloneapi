@@ -10,6 +10,8 @@ class Tweets(models.Model):
     images = models.FileField(upload_to='images', blank=True, null=True)
     date_posted = models.DateTimeField(auto_now_add=True)
     tweep = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    likes = models.IntegerField(default=0)
+    liker = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='user_like')
     # link = models.URLField()
 
     class Meta:

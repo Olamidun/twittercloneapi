@@ -4,7 +4,7 @@ from tweets.models import Tweets, Comments
 # Register your models here.
 
 class TweetAdmin(admin.ModelAdmin):
-    list_display = ['tweep','texts', 'date_posted',]
+    list_display = ['tweep','texts',  'likes', 'date_posted',]
     search_fields = ['tweep__username', 'tweep__email']
 
 

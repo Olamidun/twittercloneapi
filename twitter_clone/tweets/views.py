@@ -72,3 +72,30 @@ def tweet_detail(request, pk):
         serializer = TweetSerializer(tweet)
         return Response(serializer.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def like(request, pk):
+    tweet = Tweets.objects.get(pk=pk)
+    # serializer = TweetSerializer(data=request.data)
+    if not request.user in tweet.liker.all():
+        tweet.likes += 1
+        tweet.liker.add(request.user)
+        tweet.save()
+        TweetSerializer(tweet)
+        return Response('You have liked this post')
+    return Response('You cannot like this post more than once')
+    # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def unlike(request, pk):
+    tweet = Tweets.objects.get(pk=pk)
+    if request.user in tweet.liker.all():
+        tweet.likes -= 1
+        tweet.liker.remove(request.user)
+        tweet.save()
+        return Response('You have unlike this post')
+    return Response('You cannot unlike this post more than once')
