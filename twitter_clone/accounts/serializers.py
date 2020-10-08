@@ -1,6 +1,6 @@
 # from accounts.models import UserProfile
 from rest_framework import serializers
-from rest_framework.response import Response
+# from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.models import Account
@@ -71,6 +71,12 @@ class LoginSerializer(serializers.ModelSerializer):
         }
         return res
 
+
+
+class UserSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Account
+        exclude = ['password', 'groups', 'user_permissions', 'is_superuser', 'is_admin', 'is_staff']
 
 
 # class UserProfileSerializer(serializers.ModelSerializer):

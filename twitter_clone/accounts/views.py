@@ -1,9 +1,13 @@
 from django.shortcuts import render, reverse
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
-from accounts.serializers import UserRegistrationSerializer, LoginSerializer
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.generics import ListAPIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
+from accounts.serializers import UserRegistrationSerializer, LoginSerializer, UserSearchSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.filters import SearchFilter, OrderingFilter
 from accounts.models import Account
 from .utils import Util
 from django.contrib.sites.shortcuts import get_current_site
@@ -74,4 +78,25 @@ def verify_email(request):
         return Response({"error": 'Activation link has expired'}, status=status.HTTP_400_BAD_REQUEST)
     except jwt.exceptions.DecodeError:
         return Response({"error": 'Invalid token, request new one'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# @api_view(['GET'])
+# @permission_classes([IsAuthenticated])
+# def search_user(request):
+#     if request.method == "GET":
+#         search_query = request.GET.get("q")
+#         if len(search_query) > 0:
+#             search_results = Account.objects.filter(username__icontains=search_query).filter(email__icontains=search_query).distinct()
+#             serializer = UserSearchSerializer(search_results, many=True)
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         return Response('Field cannot be empty', status=status.HTTP_400_BAD_REQUEST)
+#     return Response('Bad request method', status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+class SearchView(ListAPIView):
+    queryset = Account.objects.all()
+    serializer_class = UserSearchSerializer
+    authentication_classes = (JWTAuthentication, )
+    permission_classes = (IsAuthenticated, )
+    filter_backends = (SearchFilter, OrderingFilter)
+    search_fields = ('username', )
     

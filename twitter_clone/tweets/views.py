@@ -5,8 +5,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
-from tweets.models import Tweets
-from tweets.serializers import TweetSerializer
+from tweets.models import Tweets, Comments
+from tweets.serializers import TweetSerializer, CommentSerializer
 # Create your views here.
 
 
@@ -44,8 +44,11 @@ def delete_tweet(request, pk):
     except Tweets.DoesNotExist:
         return Response('The Tweet you are trying to delete cannot be found', status=status.HTTP_404_NOT_FOUND)
     if request.method == 'DELETE':
-        tweet.delete()
-        return Response('Delete successful')
+        if tweet.tweep == request.user:
+            tweet.delete()
+            return Response('Delete successful')
+        return Response('You cannot delete this post because you are not the author')
+    return Response('Bad Http request', status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 @api_view(['POST'])
@@ -74,7 +77,7 @@ def tweet_detail(request, pk):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['PUT'])
+@api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def like(request, pk):
     tweet = Tweets.objects.get(pk=pk)
@@ -89,7 +92,7 @@ def like(request, pk):
     # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['PUT'])
+@api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def unlike(request, pk):
     tweet = Tweets.objects.get(pk=pk)
@@ -99,3 +102,79 @@ def unlike(request, pk):
         tweet.save()
         return Response('You have unlike this post')
     return Response('You cannot unlike this post more than once')
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def comments_list(request, pk):
+    tweet = Tweets.objects.get(pk=pk)
+    comments = Comments.objects.filter(tweet=tweet)
+    serializer = CommentSerializer(comments, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_comment(request, pk):
+    tweet = Tweets.objects.get(pk=pk)
+    user = request.user
+    if request.method == 'POST':
+        serializer = CommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(commenter=user, tweet=tweet)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        return Response(serializer.errors, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_comment(request, pk):
+    try:
+        comment = Comments.objects.get(pk=pk)
+    except comment.DoesNotExist:
+        return Response('The comment you are looking for does not exist!')
+    if request.method == 'DELETE':
+        if request.user == comment.commenter:
+            comment.delete()
+            return Response('This comment has been deleted sccessfully', status=status.HTTP_200_OK)
+        else:
+            return Response('You cannot delete this comment as you are not the commenter', status=status.HTTP_401_UNAUTHORIZED)
+    return Response('Bad')
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def like_comment(request, pk):
+    try:
+        comment = Comments.objects.get(pk=pk)
+    # serializer = TweetSerializer(data=request.data)
+    except comment.DoesNotExist:
+        return Response('The comment you are looking for does not exist!')
+    if request.method == "PATCH":
+        if not request.user in comment.comment_liker.all():
+            comment.comment_likes += 1
+            comment.comment_liker.add(request.user)
+            comment.save()
+            return Response('You have liked this comment')
+        return Response('You cannot like this comment more than once')
+    return Response('Bad request', status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def unlike_comment(request, pk):
+    try:
+        comment = Comments.objects.get(pk=pk)
+    except comment.DoesNotExist:
+        return Response('The comment you are looking for does not exist!')
+    if request.method == 'PATCH':
+        if request.user in comment.comment_liker.all():
+            comment.comment_likes -= 1
+            comment.comment_liker.remove(request.user)
+            comment.save()
+            return Response('You have unliked this post')
+        return Response('You cannot unlike this post more than once')
+    return Response('Bad request', status=status.HTTP_405_METHOD_NOT_ALLOWED)

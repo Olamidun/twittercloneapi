@@ -9,8 +9,8 @@ class TweetAdmin(admin.ModelAdmin):
 
 
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ['commenter', 'comment', 'tweet', 'date_commented']
-    list_display_links = ['tweet']
+    list_display = ['commenter', 'comment', 'tweet', "comment_likes",'date_commented']
+    list_display_links = ['tweet', 'comment']
     search_fields = ['commenter__username', 'commenter__email']
 admin.site.site_header = 'TwitIt Admin Dashboard'
 admin.site.register(Tweets, TweetAdmin)

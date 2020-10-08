@@ -10,7 +10,7 @@ class Tweets(models.Model):
     images = models.FileField(upload_to='images', blank=True, null=True)
     date_posted = models.DateTimeField(auto_now_add=True)
     tweep = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    likes = models.IntegerField(default=0)
+    likes = models.PositiveIntegerField(default=0)
     liker = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='user_like')
     # link = models.URLField()
 
@@ -19,7 +19,7 @@ class Tweets(models.Model):
         verbose_name_plural = _('Tweets')
 
     def __str__(self):
-        return f"{self.tweep.username}'s tweet"
+        return f"{self.texts}"
 
 
 class Comments(models.Model):
@@ -28,6 +28,8 @@ class Comments(models.Model):
     images = models.FileField(upload_to="comment_images", null=True, blank=True)
     date_commented = models.DateTimeField(auto_now_add=True)
     commenter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    comment_likes = models.PositiveIntegerField(default=0)
+    comment_liker = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='comment_liker')
 
     class Meta:
         # verbose_name = _('my thing')
