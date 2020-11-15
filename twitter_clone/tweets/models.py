@@ -1,11 +1,14 @@
 from django.db import models
 from django.conf import settings
+import uuid
 from django.utils.translation import gettext_lazy as _
+from django.db.models.signals import post_save
 
 
 # Create your models here.
 
 class Tweets(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     texts = models.TextField()
     images = models.FileField(upload_to='images', blank=True, null=True)
     date_posted = models.DateTimeField(auto_now_add=True)
@@ -37,3 +40,30 @@ class Comments(models.Model):
 
     def __str__(self):
         return f"{self.commenter.username}'s comments"
+
+
+class Follow(models.Model):
+    followers = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='follower')
+    following = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='following')
+
+    def __str__(self):
+        return f"{self.followers} is following {self.following}"
+
+class Stream(models.Model):
+    following = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='stream_follower')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    tweet = models.ForeignKey(Tweets, on_delete=models.CASCADE)
+    date = models.DateTimeField()
+
+    def __str__(self):
+        return f"{self.following.username}'s tweet showing on {self.user.username}'s timeline"
+
+    def add_post(sender, instance, *args, **kwargs):
+        tweet = instance
+        user = tweet.tweep
+        followers = Follow.objects.all().filter(following=user)
+        for follower in followers:
+            stream = Stream(tweet=tweet, user=follower.followers, date=tweet.date_posted, following=user)
+            stream.save()
+
+post_save.connect(Stream.add_post, sender=Tweets)

@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
+from tweets.models import Tweets
 # Create your models here.
 
 class AccountManager(BaseUserManager):
@@ -56,13 +58,12 @@ class Account(AbstractBaseUser, PermissionsMixin):
 
 
 
-# class UserProfile(models.Model):
-#     user = models.OneToOneField(User, on_delete=models.CASCADE)
-#     date_joined = models.DateTimeField(auto_now_add=True)
-#     profile_image = models.ImageField(upload_to="profile_picture")
-#     followers = models.ManyToManyField(User, related_name='user_followers')
-#     following = models.ManyToManyField(User, related_name='user_following')
-#     number_of_followers = models.BigIntegerField(default=0)
-#     number_of_followings = models.BigIntegerField(default=0)
-#     def __str__(self):
-#         return self.user
+class Profile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile", null=True, blank=True)
+    bio = models.CharField(max_length=255)
+    location = models.CharField(max_length=100)
+    Website = models.URLField()
+    profile_image = models.ImageField(upload_to="profile_picture")
+
+    def __str__(self):
+        return f"{self.user.username}'s Profile"

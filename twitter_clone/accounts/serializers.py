@@ -1,4 +1,5 @@
-# from accounts.models import UserProfile
+from accounts.models import Profile
+from tweets.models import Follow
 from rest_framework import serializers
 # from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
@@ -79,7 +80,38 @@ class UserSearchSerializer(serializers.ModelSerializer):
         exclude = ['password', 'groups', 'user_permissions', 'is_superuser', 'is_admin', 'is_staff']
 
 
-# class UserProfileSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = UserProfile
-#         fields = ['user', 'date_joined', 'profile_image', 'number_of_followers', 'number_of_followings']
+class UserProfileSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField('get_username')
+    class Meta:
+        model = Profile
+        fields = ['user', 'bio', 'location', 'website', 'profile_image']
+        extra_kwargs = {
+            "website": {
+                "required": False
+            },
+            "location": {
+                "required": False
+            }
+        }
+
+    def get_username(self, profile):
+        user = profile.user.username
+        return user
+
+
+class FollowSerializer(serializers.ModelSerializer):
+    followers = serializers.SerializerMethodField('get_followers')
+    following = serializers.SerializerMethodField('get_following')
+
+    class Meta:
+        model = Follow
+        fields = ['followers', 'following']
+
+    
+    def get_followers(self, follow):
+        followers = follow.followers.username
+        return followers
+
+    def get_following(self, follow):
+        following = follow.following.username
+        return following

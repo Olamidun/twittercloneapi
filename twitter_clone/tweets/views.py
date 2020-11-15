@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
-from tweets.models import Tweets, Comments
+from tweets.models import Tweets, Comments, Stream
 from tweets.serializers import TweetSerializer, CommentSerializer
 # Create your views here.
 
@@ -13,7 +13,14 @@ from tweets.serializers import TweetSerializer, CommentSerializer
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def tweet(request):
-    tweets = Tweets.objects.all()
+    streams = Stream.objects.filter(user=request.user)
+
+    group_ids = []
+    for stream in streams:
+        group_ids.append(stream.tweet_id)
+    print(group_ids)
+    tweets = Tweets.objects.filter(id__in=group_ids).all()
+    
     serializer = TweetSerializer(tweets, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -100,7 +107,7 @@ def unlike(request, pk):
         tweet.likes -= 1
         tweet.liker.remove(request.user)
         tweet.save()
-        return Response('You have unlike this post')
+        return Response('You have unliked this post')
     return Response('You cannot unlike this post more than once')
 
 

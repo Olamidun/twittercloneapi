@@ -1,5 +1,5 @@
 from django.contrib import admin
-from accounts.models import Account
+from accounts.models import Account, Profile
 from django.contrib.auth.admin import UserAdmin
 # Register your models here.
 
@@ -9,8 +9,9 @@ class AccountAdmin(UserAdmin):
     search_fields = ['email', 'username']
     readonly_fields = ['date_joined', 'last_login']
 
-    # filter_horizontal = ()
-    # list_filter = ()
-    # fieldsets = ()
+    filter_horizontal = ()
+    list_filter = ()
+    fieldsets = ()
 
 admin.site.register(Account, AccountAdmin)
+admin.site.register(Profile)

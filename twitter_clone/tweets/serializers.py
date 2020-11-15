@@ -9,7 +9,7 @@ class TweetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Tweets
-        fields = ['texts', 'images', 'date_posted', 'tweep', 'likes', 'liker']
+        fields = ['id','texts', 'images', 'date_posted', 'tweep', 'likes', 'liker']
         extra_kwargs = {
             "images": {
                 "required": False,
