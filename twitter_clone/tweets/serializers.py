@@ -6,12 +6,13 @@ class TweetSerializer(serializers.ModelSerializer):
     tweep = serializers.SerializerMethodField('get_tweep_username')
     likes = serializers.SerializerMethodField('get_tweet_likes')
     liker = serializers.StringRelatedField(many=True)
+    
 
     class Meta:
         model = Tweets
-        fields = ['id','texts', 'images', 'date_posted', 'tweep', 'likes', 'liker']
+        fields = ['id','texts', 'file_content', 'date_posted', 'tweep', 'likes', 'liker']
         extra_kwargs = {
-            "images": {
+            "file_content": {
                 "required": False,
             }
         }
@@ -33,9 +34,9 @@ class CommentSerializer(serializers.ModelSerializer):
     comment_liker = serializers.StringRelatedField(many=True)
     class Meta:
         model = Comments
-        fields = ['tweet', 'comment', 'images', 'date_commented', 'commenter', 'comment_likes', 'comment_liker']
+        fields = ['tweet', 'comment', 'file_content', 'date_commented', 'commenter', 'comment_likes', 'comment_liker']
         extra_kwargs = {
-            "images": {
+            "file_content": {
                 "required": False,
             }
         }

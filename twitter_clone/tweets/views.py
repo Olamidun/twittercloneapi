@@ -1,7 +1,8 @@
 from django.shortcuts import render
 from rest_framework import status
-from rest_framework.parsers import JSONParser
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.views import APIView
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
+from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
@@ -58,8 +59,28 @@ def delete_tweet(request, pk):
     return Response('Bad Http request', status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
+
+# class PostView(APIView):
+#     parser_classes = (MultiPartParser, FormParser)
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request, *args, **kwargs):
+#         tweets = Tweets.objects.all()
+#         serializer = TweetSerializer(tweets, many=True)
+#         return Response(serializer.data)
+
+#     def post(self, request, *args, **kwargs):
+#         tweet_serializer = TweetSerializer(data=request.data)
+#         if tweet_serializer.is_valid():
+#             tweet_serializer.save()
+#             return Response(tweet_serializer.data, status=status.HTTP_201_CREATED)
+#         else:
+#             print('error', tweet_serializer.errors)
+#             return Response(tweet_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
 def create_tweet(request):
     user = request.user
     if request.method == 'POST':

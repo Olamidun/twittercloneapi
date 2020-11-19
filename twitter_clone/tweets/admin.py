@@ -1,10 +1,10 @@
 from django.contrib import admin
-from tweets.models import Tweets, Comments, Follow, Stream
+from tweets.models import Tweets, TweetFile, Comments, Follow, Stream
 
 # Register your models here.
 
 class TweetAdmin(admin.ModelAdmin):
-    list_display = ['tweep','texts',  'likes', 'date_posted',]
+    list_display = ['tweep','texts', 'likes', 'date_posted',]
     search_fields = ['tweep__username', 'tweep__email']
 
 
@@ -16,4 +16,5 @@ admin.site.site_header = 'TwitIt Admin Dashboard'
 admin.site.register(Tweets, TweetAdmin)
 admin.site.register(Comments, CommentAdmin)
 admin.site.register(Follow)
+admin.site.register(TweetFile)
 admin.site.register(Stream)

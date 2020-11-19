@@ -7,10 +7,18 @@ from django.db.models.signals import post_save
 
 # Create your models here.
 
+class TweetFile(models.Model):
+    tweep =  models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    media = models.FileField(upload_to='images')
+
+    def __str(self):
+        return f"{self.tweep.username}'s media images"
+    
+
 class Tweets(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     texts = models.TextField()
-    images = models.FileField(upload_to='images', blank=True, null=True)
+    file_content = models.ManyToManyField(TweetFile, related_name='file_content')
     date_posted = models.DateTimeField(auto_now_add=True)
     tweep = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     likes = models.PositiveIntegerField(default=0)
@@ -28,7 +36,7 @@ class Tweets(models.Model):
 class Comments(models.Model):
     tweet = models.ForeignKey(Tweets, on_delete=models.CASCADE)
     comment = models.TextField(null=True, blank=True)
-    images = models.FileField(upload_to="comment_images", null=True, blank=True)
+    file_content = models.ManyToManyField(TweetFile, related_name='content_file_content')
     date_commented = models.DateTimeField(auto_now_add=True)
     commenter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     comment_likes = models.PositiveIntegerField(default=0)
