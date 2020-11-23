@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view, permission_classes, parser_class
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
-from tweets.models import Tweets, Comments, Stream
+from tweets.models import Tweets, TweetFile, Comments, Stream
 from tweets.serializers import TweetSerializer, CommentSerializer
 # Create your views here.
 
@@ -60,23 +60,7 @@ def delete_tweet(request, pk):
 
 
 
-# class PostView(APIView):
-#     parser_classes = (MultiPartParser, FormParser)
-#     permission_classes = [IsAuthenticated]
 
-#     def get(self, request, *args, **kwargs):
-#         tweets = Tweets.objects.all()
-#         serializer = TweetSerializer(tweets, many=True)
-#         return Response(serializer.data)
-
-#     def post(self, request, *args, **kwargs):
-#         tweet_serializer = TweetSerializer(data=request.data)
-#         if tweet_serializer.is_valid():
-#             tweet_serializer.save()
-#             return Response(tweet_serializer.data, status=status.HTTP_201_CREATED)
-#         else:
-#             print('error', tweet_serializer.errors)
-#             return Response(tweet_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -84,19 +68,53 @@ def delete_tweet(request, pk):
 def create_tweet(request):
     user = request.user
     if request.method == 'POST':
-        serializer = TweetSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(tweep=user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        files = request.FILES.getlist('file_content')
+        if files:
+            request.data.pop('file_content')
+            # return Tweets.objects.create(**validated_data)
+            serializer = TweetSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(tweep=user)
+                tweet_qs = Tweets.objects.get(id=serializer.data['id'])
+                uploaded_files = []
+                for file in files:
+                    content = TweetFile.objects.create(tweep=user, media=file)
+                    uploaded_files.append(content)
+                
+                tweet_qs.file_content.add(*uploaded_files)
+                context = serializer.data
+                # print(tweet_qs.file_content)
+                context["file_content"] = [file.id for file in uploaded_files]
+                # print(file.url)
+                # serializer.data["file_content"] = uploaded_files
+                return Response(context, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            serializer = TweetSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(tweep=user)
+                # tweet_qs = Tweets.objects.get(id=serializer.data['id'])
+                # uploaded_files = []
+                # for file in files:
+                #     content = TweetFile.objects.create(tweep=user, media=file)
+                #     uploaded_files.append(content)
+                
+                # tweet_qs.file_content.add(*uploaded_files)
+                context = serializer.data
+                # # print(tweet_qs.file_content)
+                # context["file_content"] = [file.id for file in uploaded_files]
+                # print(file.url)
+                # serializer.data["file_content"] = uploaded_files
+                return Response(context, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     else:
         return Response(serializer.errors, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 @api_view(['GET'])
-def tweet_detail(request, pk):
+def tweet_detail(request, id):
     try:
-        tweet = Tweets.objects.get(pk=pk)
+        tweet = Tweets.objects.get(id=id)
     except Tweets.DoesNotExist:
         return Response('The tweet you are trying to fetch does not exist', status=status.HTTP_404_NOT_FOUND)
     if request.method == 'GET':
@@ -107,8 +125,8 @@ def tweet_detail(request, pk):
 
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
-def like(request, pk):
-    tweet = Tweets.objects.get(pk=pk)
+def like(request, id):
+    tweet = Tweets.objects.get(id=id)
     # serializer = TweetSerializer(data=request.data)
     if not request.user in tweet.liker.all():
         tweet.likes += 1
@@ -122,8 +140,8 @@ def like(request, pk):
 
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
-def unlike(request, pk):
-    tweet = Tweets.objects.get(pk=pk)
+def unlike(request, id):
+    tweet = Tweets.objects.get(id=id)
     if request.user in tweet.liker.all():
         tweet.likes -= 1
         tweet.liker.remove(request.user)
@@ -134,8 +152,8 @@ def unlike(request, pk):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def comments_list(request, pk):
-    tweet = Tweets.objects.get(pk=pk)
+def comments_list(request, id):
+    tweet = Tweets.objects.get(id=id)
     comments = Comments.objects.filter(tweet=tweet)
     serializer = CommentSerializer(comments, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
@@ -143,8 +161,8 @@ def comments_list(request, pk):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def add_comment(request, pk):
-    tweet = Tweets.objects.get(pk=pk)
+def add_comment(request, id):
+    tweet = Tweets.objects.get(id=id)
     user = request.user
     if request.method == 'POST':
         serializer = CommentSerializer(data=request.data)
@@ -206,3 +224,32 @@ def unlike_comment(request, pk):
             return Response('You have unliked this post')
         return Response('You cannot unlike this post more than once')
     return Response('Bad request', status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+
+
+
+
+
+
+
+
+
+
+# class PostView(APIView):
+#     parser_classes = (MultiPartParser, FormParser)
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request, *args, **kwargs):
+#         tweets = Tweets.objects.all()
+#         serializer = TweetSerializer(tweets, many=True)
+#         return Response(serializer.data)
+
+#     def post(self, request, *args, **kwargs):
+#         tweet_serializer = TweetSerializer(data=request.data)
+#         if tweet_serializer.is_valid():
+#             tweet_serializer.save()
+#             return Response(tweet_serializer.data, status=status.HTTP_201_CREATED)
+#         else:
+#             print('error', tweet_serializer.errors)
+#             return Response(tweet_serializer.errors, status=status.HTTP_400_BAD_REQUEST)

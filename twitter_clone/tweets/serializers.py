@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from tweets.models import Tweets, Comments
+from tweets.models import Tweets, TweetFile, Comments
 
 
 class TweetSerializer(serializers.ModelSerializer):
@@ -26,6 +26,18 @@ class TweetSerializer(serializers.ModelSerializer):
         likes = tweets.likes
         return likes
 
+    
+    # def create(self, validated_data):
+    #     files = validated_data.pop('file_content')
+    #     uploaded_files = []
+    #     user =  self.context['request'].user
+    #     for file in files:
+    #         content = TweetFile.objects.create(tweep=user, media=file)
+    #         uploaded_files.append(content)
+    #     validated_data['file_content'] = uploaded_files
+    #     print(uploaded_files)
+    #     return Tweets.objects.create(**validated_data)
+        
 
 class CommentSerializer(serializers.ModelSerializer):
     tweet = serializers.StringRelatedField(many=False)

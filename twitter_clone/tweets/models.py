@@ -11,14 +11,14 @@ class TweetFile(models.Model):
     tweep =  models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     media = models.FileField(upload_to='images')
 
-    def __str(self):
+    def __str__(self):
         return f"{self.tweep.username}'s media images"
     
 
 class Tweets(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     texts = models.TextField()
-    file_content = models.ManyToManyField(TweetFile, related_name='file_content')
+    file_content = models.ManyToManyField(TweetFile, related_name='file_content', blank=True, null=True)
     date_posted = models.DateTimeField(auto_now_add=True)
     tweep = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     likes = models.PositiveIntegerField(default=0)
