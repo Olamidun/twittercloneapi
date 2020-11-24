@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view, permission_classes, parser_class
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
-from tweets.models import Tweets, TweetFile, Comments, Stream
+from tweets.models import Comments, CommentFile, Stream, Tweets, TweetFile
 from tweets.serializers import TweetSerializer, CommentSerializer
 # Create your views here.
 
@@ -28,9 +28,9 @@ def tweet(request):
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
-def edit_tweet(request, pk):
+def edit_tweet(request, id):
     try:
-        tweet = Tweets.objects.get(pk=pk)
+        tweet = Tweets.objects.get(id=id)
     except Tweets.DoesNotExist:
         return Response('Tweet is not found', status=status.HTTP_404_NOT_FOUND)
     if request.method == 'PUT':
@@ -46,9 +46,9 @@ def edit_tweet(request, pk):
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
-def delete_tweet(request, pk):
+def delete_tweet(request, id):
     try:
-        tweet = Tweets.objects.get(pk=pk)
+        tweet = Tweets.objects.get(id=id)
     except Tweets.DoesNotExist:
         return Response('The Tweet you are trying to delete cannot be found', status=status.HTTP_404_NOT_FOUND)
     if request.method == 'DELETE':
@@ -112,6 +112,7 @@ def create_tweet(request):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def tweet_detail(request, id):
     try:
         tweet = Tweets.objects.get(id=id)
@@ -165,20 +166,43 @@ def add_comment(request, id):
     tweet = Tweets.objects.get(id=id)
     user = request.user
     if request.method == 'POST':
-        serializer = CommentSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(commenter=user, tweet=tweet)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        files = request.FILES.getlist('comment_files')
+
+        if files:
+            request.data.pop('comment_files')
+
+            serializer = CommentSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(commenter=user, tweet=tweet)
+                comment_qs = Comments.objects.get(id=serializer.data['id'])
+                comment_uploaded_files = []
+                for file in files:
+                    comment_content = CommentFile.objects.create(tweep=user, comment_media=file)
+                    comment_uploaded_files.append(comment_content)
+                comment_qs.comment_files.add(*comment_uploaded_files)
+                context = serializer.data
+
+                context['comment_files'] = [file.id for file in comment_uploaded_files]
+                return Response(context, status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            serializer = CommentSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(commenter=user, tweet=tweet)
+            
+                context = serializer.data
+                return Response(context, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     else:
         return Response(serializer.errors, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
-def delete_comment(request, pk):
+def delete_comment(request, id):
     try:
-        comment = Comments.objects.get(pk=pk)
+        comment = Comments.objects.get(id=id)
     except comment.DoesNotExist:
         return Response('The comment you are looking for does not exist!')
     if request.method == 'DELETE':
@@ -192,9 +216,9 @@ def delete_comment(request, pk):
 
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
-def like_comment(request, pk):
+def like_comment(request, id):
     try:
-        comment = Comments.objects.get(pk=pk)
+        comment = Comments.objects.get(id=id)
     # serializer = TweetSerializer(data=request.data)
     except comment.DoesNotExist:
         return Response('The comment you are looking for does not exist!')
@@ -211,9 +235,9 @@ def like_comment(request, pk):
 
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
-def unlike_comment(request, pk):
+def unlike_comment(request, id):
     try:
-        comment = Comments.objects.get(pk=pk)
+        comment = Comments.objects.get(id=id)
     except comment.DoesNotExist:
         return Response('The comment you are looking for does not exist!')
     if request.method == 'PATCH':
@@ -233,23 +257,3 @@ def unlike_comment(request, pk):
 
 
 
-
-
-
-# class PostView(APIView):
-#     parser_classes = (MultiPartParser, FormParser)
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request, *args, **kwargs):
-#         tweets = Tweets.objects.all()
-#         serializer = TweetSerializer(tweets, many=True)
-#         return Response(serializer.data)
-
-#     def post(self, request, *args, **kwargs):
-#         tweet_serializer = TweetSerializer(data=request.data)
-#         if tweet_serializer.is_valid():
-#             tweet_serializer.save()
-#             return Response(tweet_serializer.data, status=status.HTTP_201_CREATED)
-#         else:
-#             print('error', tweet_serializer.errors)
-#             return Response(tweet_serializer.errors, status=status.HTTP_400_BAD_REQUEST)

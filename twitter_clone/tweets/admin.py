@@ -1,5 +1,5 @@
 from django.contrib import admin
-from tweets.models import Tweets, TweetFile, Comments, Follow, Stream
+from tweets.models import Comments, CommentFile, Follow, Stream,  Tweets, TweetFile
 
 # Register your models here.
 
@@ -15,6 +15,7 @@ class CommentAdmin(admin.ModelAdmin):
 admin.site.site_header = 'TwitIt Admin Dashboard'
 admin.site.register(Tweets, TweetAdmin)
 admin.site.register(Comments, CommentAdmin)
+admin.site.register(CommentFile)
 admin.site.register(Follow)
 admin.site.register(TweetFile)
 admin.site.register(Stream)

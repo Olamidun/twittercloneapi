@@ -12,7 +12,7 @@ class TweetFile(models.Model):
     media = models.FileField(upload_to='images')
 
     def __str__(self):
-        return f"{self.tweep.username}'s media images"
+        return f"{self.tweep.username}'s tweet images"
     
 
 class Tweets(models.Model):
@@ -33,10 +33,18 @@ class Tweets(models.Model):
         return f"{self.texts}"
 
 
+class CommentFile(models.Model):
+    tweep =  models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    comment_media = models.FileField(upload_to='comment_images')
+
+    def __str__(self):
+        return f"{self.tweep.username}'s comment images"
+
 class Comments(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tweet = models.ForeignKey(Tweets, on_delete=models.CASCADE)
     comment = models.TextField(null=True, blank=True)
-    file_content = models.ManyToManyField(TweetFile, related_name='content_file_content')
+    comment_files = models.ManyToManyField(CommentFile, related_name='comment_file_content', blank=True, null=True)
     date_commented = models.DateTimeField(auto_now_add=True)
     commenter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     comment_likes = models.PositiveIntegerField(default=0)

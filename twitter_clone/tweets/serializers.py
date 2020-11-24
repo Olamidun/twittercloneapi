@@ -46,9 +46,9 @@ class CommentSerializer(serializers.ModelSerializer):
     comment_liker = serializers.StringRelatedField(many=True)
     class Meta:
         model = Comments
-        fields = ['tweet', 'comment', 'file_content', 'date_commented', 'commenter', 'comment_likes', 'comment_liker']
+        fields = ['id', 'tweet', 'comment', 'comment_files', 'date_commented', 'commenter', 'comment_likes', 'comment_liker']
         extra_kwargs = {
-            "file_content": {
+            "comment_files": {
                 "required": False,
             }
         }
