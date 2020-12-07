@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from tweets.models import Tweets
+from cloudinary.models import CloudinaryField
 # Create your models here.
 
 class AccountManager(BaseUserManager):
@@ -62,8 +63,14 @@ class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile", null=True, blank=True)
     bio = models.CharField(max_length=255)
     location = models.CharField(max_length=100)
-    Website = models.URLField()
-    profile_image = models.ImageField(upload_to="profile_picture")
+    website = models.URLField()
+    profile_image = CloudinaryField("profile_picture")
+    number_of_tweets = models.BigIntegerField(default=0)
+    number_of_followers = models.BigIntegerField(default=0)
+    number_of_following = models.BigIntegerField(default=0)
+    # followers = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile_followers')
+
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
+

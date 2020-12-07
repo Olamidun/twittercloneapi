@@ -71,7 +71,6 @@ def create_tweet(request):
         files = request.FILES.getlist('file_content')
         if files:
             request.data.pop('file_content')
-            # return Tweets.objects.create(**validated_data)
             serializer = TweetSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save(tweep=user)
@@ -83,28 +82,14 @@ def create_tweet(request):
                 
                 tweet_qs.file_content.add(*uploaded_files)
                 context = serializer.data
-                # print(tweet_qs.file_content)
-                context["file_content"] = [file.id for file in uploaded_files]
-                # print(file.url)
-                # serializer.data["file_content"] = uploaded_files
+                context["file_content"] = [file.media.url for file in uploaded_files]
                 return Response(context, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             serializer = TweetSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save(tweep=user)
-                # tweet_qs = Tweets.objects.get(id=serializer.data['id'])
-                # uploaded_files = []
-                # for file in files:
-                #     content = TweetFile.objects.create(tweep=user, media=file)
-                #     uploaded_files.append(content)
-                
-                # tweet_qs.file_content.add(*uploaded_files)
                 context = serializer.data
-                # # print(tweet_qs.file_content)
-                # context["file_content"] = [file.id for file in uploaded_files]
-                # print(file.url)
-                # serializer.data["file_content"] = uploaded_files
                 return Response(context, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     else:

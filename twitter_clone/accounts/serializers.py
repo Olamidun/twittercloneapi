@@ -1,14 +1,20 @@
 from accounts.models import Profile
-from tweets.models import Follow
+# from tweets.models import Follow
 from rest_framework import serializers
 # from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from accounts.models import Account
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 import jwt
 from django.conf import settings
+# from django.contrib.auth.tokens import PasswordResetTokenGenerator
+# from django.utils.encoding import DjangoUnicodeDecodeError, force_str, smart_bytes, smart_str
+# from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+# from django.contrib.sites.shortcuts import get_current_site
+# from django.urls import reverse
+
 class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
@@ -73,6 +79,40 @@ class LoginSerializer(serializers.ModelSerializer):
         return res
 
 
+class LogOutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+    default_error_messages = {
+        'bad_token': 'Token is expired or invalid'
+    }
+
+    def validate(self, data):
+        self.token = data['refresh']
+        return data
+
+    def save(self,  **kwargs):
+        try:
+            RefreshToken(self.token).blacklist()
+        except TokenError:
+            self.fail('bad_token')
+
+
+class PasswordRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    class Meta:
+        fields = ['email']
+
+    
+
+class SetNewPasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(min_length=6, write_only=True)
+    token = serializers.CharField(min_length=1, write_only=True)
+    uidb64 = serializers.CharField(min_length=1, write_only=True)
+
+    class Meta:
+        fields = ['password', 'token', 'uidb64']
+
 
 class UserSearchSerializer(serializers.ModelSerializer):
     class Meta:
@@ -84,7 +124,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField('get_username')
     class Meta:
         model = Profile
-        fields = ['user', 'bio', 'location', 'website', 'profile_image']
+        fields = ['user', 'bio', 'location', 'website', 'profile_image', 'number_of_tweets', 'number_of_followers', 'number_of_following']
         extra_kwargs = {
             "website": {
                 "required": False
@@ -98,20 +138,26 @@ class UserProfileSerializer(serializers.ModelSerializer):
         user = profile.user.username
         return user
 
+    # def get_followers(self, follow):
+    #     for follower in follow.objects.all:
+    #         followers = follower.followers.username
+    #     return followers
+ 
 
-class FollowSerializer(serializers.ModelSerializer):
-    followers = serializers.SerializerMethodField('get_followers')
-    following = serializers.SerializerMethodField('get_following')
 
-    class Meta:
-        model = Follow
-        fields = ['followers', 'following']
+# class FollowSerializer(serializers.ModelSerializer):
+#     followers = serializers.SerializerMethodField('get_followers')
+#     following = serializers.SerializerMethodField('get_following')
+
+#     class Meta:
+#         model = Follow
+#         fields = ['followers', 'following']
 
     
-    def get_followers(self, follow):
-        followers = follow.followers.username
-        return followers
+#     def get_followers(self, follow):
+#         followers = follow.followers.id
+#         return followers
 
-    def get_following(self, follow):
-        following = follow.following.username
-        return following
+#     def get_following(self, follow):
+#         following = follow.following.id
+#         return following

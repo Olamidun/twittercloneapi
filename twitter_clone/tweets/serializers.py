@@ -14,6 +14,9 @@ class TweetSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "file_content": {
                 "required": False,
+            },
+            "texts": {
+                "required": False,
             }
         }
     # function that returns the owner of a tweet
@@ -37,7 +40,13 @@ class TweetSerializer(serializers.ModelSerializer):
     #     validated_data['file_content'] = uploaded_files
     #     print(uploaded_files)
     #     return Tweets.objects.create(**validated_data)
-        
+
+
+
+class TweetFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TweetFile
+        fields = ['media']        
 
 class CommentSerializer(serializers.ModelSerializer):
     tweet = serializers.StringRelatedField(many=False)

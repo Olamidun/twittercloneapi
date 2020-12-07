@@ -3,13 +3,14 @@ from django.conf import settings
 import uuid
 from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save
+from cloudinary.models import CloudinaryField
 
 
 # Create your models here.
 
 class TweetFile(models.Model):
     tweep =  models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    media = models.FileField(upload_to='images')
+    media = CloudinaryField('images')
 
     def __str__(self):
         return f"{self.tweep.username}'s tweet images"
@@ -17,7 +18,7 @@ class TweetFile(models.Model):
 
 class Tweets(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    texts = models.TextField()
+    texts = models.TextField(null=True, blank=True)
     file_content = models.ManyToManyField(TweetFile, related_name='file_content', blank=True, null=True)
     date_posted = models.DateTimeField(auto_now_add=True)
     tweep = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -35,7 +36,7 @@ class Tweets(models.Model):
 
 class CommentFile(models.Model):
     tweep =  models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    comment_media = models.FileField(upload_to='comment_images')
+    comment_media = CloudinaryField('comment_images')
 
     def __str__(self):
         return f"{self.tweep.username}'s comment images"
@@ -63,13 +64,13 @@ class Follow(models.Model):
     following = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='following')
 
     def __str__(self):
-        return f"{self.followers} is following {self.following}"
+        return f"{self.followers.username} is following {self.following.username}"
 
 class Stream(models.Model):
     following = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='stream_follower')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     tweet = models.ForeignKey(Tweets, on_delete=models.CASCADE)
-    date = models.DateTimeField()
+    date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.following.username}'s tweet showing on {self.user.username}'s timeline"
