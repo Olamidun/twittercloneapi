@@ -9,9 +9,10 @@ from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 import jwt
 from django.conf import settings
-# from django.contrib.auth.tokens import PasswordResetTokenGenerator
-# from django.utils.encoding import DjangoUnicodeDecodeError, force_str, smart_bytes, smart_str
-# from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from rest_framework.exceptions import AuthenticationFailed
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.encoding import DjangoUnicodeDecodeError, force_str, smart_bytes, smart_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 # from django.contrib.sites.shortcuts import get_current_site
 # from django.urls import reverse
 
@@ -48,11 +49,18 @@ class LoginSerializer(serializers.ModelSerializer):
     date_joined = serializers.DateTimeField(read_only=True)
     active = serializers.BooleanField(read_only=True)
     password = serializers.CharField(write_only=True, required=True)
-    tokens = serializers.CharField(read_only=True)
+    tokens = serializers.SerializerMethodField()
 
     class Meta:
         model = Account
         fields = ['email', 'password', 'username',  'date_joined', 'active', 'tokens']
+
+    def get_tokens(self, obj):
+        user = Account.objects.get(email=obj['email'])
+        return {
+            "access": user.token()['access'],
+            "refresh": user.token()['refresh'],
+        }
 
 
     def validate(self, data):
@@ -99,6 +107,7 @@ class LogOutSerializer(serializers.Serializer):
 
 class PasswordRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
+    redirect_url = serializers.CharField(max_length=1000, required=False)
 
     class Meta:
         fields = ['email']
@@ -113,6 +122,26 @@ class SetNewPasswordSerializer(serializers.Serializer):
     class Meta:
         fields = ['password', 'token', 'uidb64']
 
+    def validate(self, data):
+        try:
+            password_ = data['password']
+            token_ = data['token']
+            uidb64_ = data['uidb64']
+
+            id = force_str(urlsafe_base64_decode(uidb64_))
+            user = Account.objects.get(id=id)
+            print(id)
+            print(user)
+            print(uidb64_)
+            print(password_)
+
+            if not PasswordResetTokenGenerator().check_token(user, token_):
+                raise AuthenticationFailed('The reset link is invalid', 401)
+            user.set_password(password_)
+            user.save()
+        except DjangoUnicodeDecodeError:
+            raise AuthenticationFailed('The reset link is invalid', 401)
+        return super().validate(data)
 
 class UserSearchSerializer(serializers.ModelSerializer):
     class Meta:

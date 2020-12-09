@@ -1,4 +1,5 @@
-from django.shortcuts import render, reverse, get_object_or_404
+from django.shortcuts import redirect, reverse, get_object_or_404
+from django.http import HttpResponsePermanentRedirect
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
@@ -23,7 +24,19 @@ from django.db import transaction
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import DjangoUnicodeDecodeError, force_str, smart_bytes, smart_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from dotenv import load_dotenv
+import os
 # Create your views here.
+
+
+
+load_dotenv()
+
+front_end_url = os.getenv('FRONTEND_URL')
+
+class CustomRedirect(HttpResponsePermanentRedirect):
+
+    allowed_schemes = [front_end_url, 'http', 'https']
 
 
 @api_view(['POST'])
@@ -113,9 +126,11 @@ def password_reset(request):
 
             relative_link = reverse('accounts:reset-password', kwargs={'uidb64': uidb64, 'token': token})
 
+            redirect_url = serializer.data.get('redirect_url', '')
+
             absolute_url = f'http://{current_site}{relative_link}'
 
-            email_body = f'Hi {user.username}, you performed a password reset operation on our website, use the link below to reset your password\n {absolute_url}'
+            email_body = f'Hi {user.username}, you performed a password reset operation on our website, use the link below to reset your password\n {absolute_url}?redirect_url={redirect_url}'
 
             data = {'email_body': email_body, 'to_email': user.email, 'email_subject':'Reset your password'}
 
@@ -128,36 +143,37 @@ def password_reset(request):
 
 @api_view(['GET'])
 def password_token_check(request, uidb64, token):
+    redirect_url = request.GET.get('redirect_url')
     try:
         id = smart_str(urlsafe_base64_decode(uidb64))
         user = Account.objects.get(id=id)
+        print(id)
+        print(user)
+        print(uidb64)
         if not PasswordResetTokenGenerator().check_token(user, token):
-            return Response({'error': 'Token is not valid, please request a new one'}, status=status.HTTP_401_UNAUTHORIZED)
-        return Response({'messages': 'Credential valid', 'uidb64': uidb64, 'token': token}, status=status.HTTP_200_OK)
+
+            if len(redirect_url) > 3:
+                return CustomRedirect(f'{redirect_url}?token_valid=False')
+            else:
+                return CustomRedirect(f'{front_end_url}?token_valid=False')
+            # return Response({'error': 'Token is not valid, please request a new one'}, status=status.HTTP_401_UNAUTHORIZED)
+        if redirect_url and len(redirect_url) > 3:
+            return CustomRedirect(f'{redirect_url}?token_valid=True&?message=Token is valid&?uidb64={uidb64}&?token={token}')
+        else:
+            return CustomRedirect(f'{front_end_url}?token_valid=False')
     except DjangoUnicodeDecodeError:
-        return Response({'error': 'Token is not valid, please request a new one'}, status=status.HTTP_401_UNAUTHORIZED)
+        return CustomRedirect(f'{redirect_url}?token_valid=False')
 
 
-@api_view(['PATCH'])
-def set_new_password(request):
-    serializer = SetNewPasswordSerializer(data=request.data)
+class SetNewPasswordView(generics.GenericAPIView):
+    serializer_class = SetNewPasswordSerializer
 
-    if serializer.is_valid():
-        try:
-            password = serializer.data.get('password')
-            token = serializer.data.get('token')
-            uidb64 = serializer.data.get('uidb64')
+    def patch(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response({"message": 'Your password has been reset, you can now login'}, status=status.HTTP_200_OK)
 
-            id = force_str(urlsafe_base64_decode(uidb64))
-            user = Account.objects.get(id=id)
 
-            if not PasswordResetTokenGenerator().check_token(user, token):
-                return Response({'error': 'Token is not valid, please request a new one'}, status=status.HTTP_401_UNAUTHORIZED)
-            user.set_password(password)
-            user.save()
-            return Response({"message": 'Your password has been reset, you can now login'})
-        except DjangoUnicodeDecodeError:
-            return Response({'error': 'Token is not valid, please request a new one'}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
