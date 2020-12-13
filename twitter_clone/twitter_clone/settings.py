@@ -13,6 +13,8 @@ import os
 from pathlib import Path
 from datetime import timedelta
 import cloudinary
+import django_heroku
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,7 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'k^@^^*hw-vq+@xrx$g*c0xq6g91z2*%irp8pu-6amc6t47piz#'
+
+load_dotenv()
+APP_SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -95,8 +99,8 @@ DATABASES = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=60)
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=30)
 }
 
 REST_FRAMEWORK = {
@@ -167,3 +171,6 @@ cloudinary.config(
   api_key = os.environ.get('API_KEY'),
   api_secret = os.environ.get('API_SECRET')
 )
+
+
+django_heroku.settings(locals())
