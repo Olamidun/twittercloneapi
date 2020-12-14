@@ -27,6 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv()
 APP_SECRET_KEY = os.getenv('SECRET_KEY')
+print(APP_SECRET_KEY)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -151,9 +152,10 @@ CORS_ALLOWED_ALL_ORIGINS = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
-STATIC_URL = '/static/'
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# STATIC_URL = '/static/'
 
-STATICFILES_DIR = os.path.join(BASE_DIR, "static")
+# STATICFILES_DIR = os.path.join(BASE_DIR, "static")
 
 MEDIA_URL = '/media/'
 
